@@ -1,86 +1,65 @@
-import {Exercise, ExerciseModel} from "../models/Exercise";
-import {getEnumsByUniqueNames} from "./enumService";
-import {FilterQuery} from "mongoose";
+import { Schema, model, FilterQuery } from "mongoose";
+import { ExerciseModel } from "../models/Exercise";
+import { EnumModel } from "../models/EnumValue";
+import { Exercise } from "../models/Exercise";
+import {getEnumByUniqueName, getEnumsByUniqueNames} from "./enumService";
 
-/**
- * Fetch all exercises, filtered by muscle and/or equipment and/or name.
- */
-/**
- * Fetch all exercises with optional filters
- * Each exercise will have:
- * muscles: { uniqueName, displayName }[]
- * equipments: { uniqueName, displayName }[]
- */
 export async function getAllExercises(
     muscles?: string[] | string,
     equipments?: string[] | string,
     name?: string
-): Promise<
-    (Omit<Exercise, "muscles" | "equipments"> & {
-        muscles: { uniqueName: string; displayName: string }[];
-        equipments: { uniqueName: string; displayName: string }[];
-    })[]
-> {
+): Promise<Exercise[]> {
     const filter: FilterQuery<Exercise> = {};
 
     const muscleArray = Array.isArray(muscles) ? muscles : muscles ? [muscles] : [];
     const equipmentArray = Array.isArray(equipments) ? equipments : equipments ? [equipments] : [];
 
-    if (muscleArray.length > 0) filter.muscles = { $all: muscleArray };
-    if (equipmentArray.length > 0) filter.equipments = { $all: equipmentArray };
-    if (name) filter.displayName = { $regex: new RegExp(name, "i") };
+    if (muscleArray.length > 0) {
+        const muscleDocs = await getEnumsByUniqueNames(muscleArray, "muscle");
+        filter.muscles = { $all: muscleDocs.map((m) => m._id) };
+    }
 
-    // Fetch exercises
-    const exercises = await ExerciseModel.find(filter).lean();
+    if (equipmentArray.length > 0) {
+        const equipmentDocs = await getEnumsByUniqueNames(equipmentArray, "equipment");
+        filter.equipments = { $all: equipmentDocs.map((e) => e._id) };
+    }
 
-    // Collect all uniqueNames to fetch displayNames
-    const allEnumNames = Array.from(
-        new Set(exercises.flatMap((e) => [...e.muscles, ...e.equipments]))
-    );
+    if (name) {
+        filter.displayName = { $regex: new RegExp(name, "i") };
+    }
 
-    const enums = await getEnumsByUniqueNames(allEnumNames);
-    const enumMap = Object.fromEntries(enums.map((e) => [e.uniqueName, e.displayName]));
-
-    // Replace strings with objects in the Exercise object itself
-    return exercises.map((e) => ({
-        ...e,
-        muscles: e.muscles.map((m) => ({uniqueName: m, displayName: enumMap[m] || m})),
-        equipments: e.equipments.map((eq) => ({uniqueName: eq, displayName: enumMap[eq] || eq})),
-    }));
+    return ExerciseModel.find(filter)
+        .populate("muscles", "uniqueName displayName type illustration")
+        .populate("equipments", "uniqueName displayName type illustration")
+        .lean();
 }
 
-/**
- * Fetch multiple exercises by their unique names.
- */
-export async function getExercisesByUniqueName(uniqueNames: string[]): Promise<Exercise[] | null> {
-    return ExerciseModel.find({ uniqueName: { $in: uniqueNames } }).lean();
+export async function getExercisesByUniqueNames(uniqueNames: string[]): Promise<Exercise[] | null> {
+    return ExerciseModel.find({ uniqueName: { $in: uniqueNames } }).lean().populate("muscles").populate("equipments");
 }
 
-/**
- * Create a new exercise, validating that muscles/equipment exist.
- */
 export async function createExercise(exerciseData: {
-    name: string;
+    uniqueName: string;
+    displayName: string;
+    illustration?: string;
     muscles: string[];
     equipments: string[];
 }): Promise<Exercise> {
-    // Validate enums exist in DB
-    const muscles = await getEnumsByUniqueNames(exerciseData.muscles, "muscle");
-    const equipments = await getEnumsByUniqueNames(exerciseData.equipments, "equipment");
+    const muscleDocs = await EnumModel.find({ uniqueName: { $in: exerciseData.muscles }, type: "muscle" });
+    const equipmentDocs = await EnumModel.find({ uniqueName: { $in: exerciseData.equipments }, type: "equipment" });
 
-    if (muscles.length !== exerciseData.muscles.length) {
-        throw new Error("Some muscles are invalid");
-    }
-    if (equipments.length !== exerciseData.equipments.length) {
-        throw new Error("Some equipments are invalid");
-    }
-
-    const exercise = new ExerciseModel({
-        ...exerciseData,
-        muscles: exerciseData.muscles,
-        equipments: exerciseData.equipments,
+    const newExercise = new ExerciseModel({
+        uniqueName: exerciseData.uniqueName,
+        displayName: exerciseData.displayName,
+        illustration: exerciseData.illustration,
+        muscles: muscleDocs.map((m) => m._id),
+        equipments: equipmentDocs.map((e) => e._id),
     });
 
-    await exercise.save();
-    return exercise.toObject();
+    await newExercise.save();
+
+    return newExercise.populate([
+        { path: "muscles", select: "uniqueName displayName type illustration" },
+        { path: "equipments", select: "uniqueName displayName type illustration" },
+    ]);
 }

@@ -1,17 +1,19 @@
 import { Types, Schema, model } from "mongoose";
 
 export interface Workout {
+    _id: Types.ObjectId;
     name: string;
-    exercises: string[]; // uniqueName
+    exercises: Types.ObjectId[];
     userId: Types.ObjectId;
-    workoutType: string; // uniqueName
+    workoutType: Types.ObjectId;
 }
 
 const WorkoutSchema = new Schema<Workout>({
+    _id: { type: Schema.Types.ObjectId, auto: true },
     name: { type: String, required: true },
-    exercises: [{ type: String, index: true }],
+    exercises: [{ type: Schema.Types.ObjectId, ref: "Exercise", index: true }],
     userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
-    workoutType: { type: String, index: true },
+    workoutType: { type: Schema.Types.ObjectId, ref: "EnumValue", index: true },
 });
 
 export const WorkoutModel = model<Workout>("Workout", WorkoutSchema);

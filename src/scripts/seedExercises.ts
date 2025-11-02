@@ -1,6 +1,7 @@
-import { Exercise, ExerciseModel } from "../models/Exercise";
+import { ExerciseModel } from "../models/Exercise";
+import { getAllEnums } from "../services/enumService";
 
-const defaultExercises: Exercise[] = [
+const defaultExercises = [
     // --- Lower Body ---
     { uniqueName: "barbellsquat", displayName: "Barbell Squat", muscles: ["quadriceps", "glutes", "hamstrings", "lowerback"], equipments: ["barbell", "powerrack"] },
     { uniqueName: "frontsquat", displayName: "Front Squat", muscles: ["quadriceps", "glutes", "core"], equipments: ["barbell", "powerrack"] },
@@ -101,11 +102,19 @@ const defaultExercises: Exercise[] = [
     { uniqueName: "yogaflow", displayName: "Yoga Flow / Stretch", muscles: ["core", "heart"], equipments: ["noequipment"] }
 ];
 
-export async function seedExercises() {
-    for (const e of defaultExercises) {
-        const exists = await ExerciseModel.findOne({ uniqueName: e.uniqueName });
-        if (!exists) {
-            await ExerciseModel.create(e);
-        }
-    }
+export default async function seedExercises() {
+    const enumValues = await getAllEnums();
+
+    const enumMap = Object.fromEntries(
+        enumValues.map(e => [e.uniqueName, e._id])
+    );
+
+    const exercisesWithIds = defaultExercises.map(ex => ({
+        ...ex,
+        muscles: ex.muscles.map(m => enumMap[m]),
+        equipments: ex.equipments.map(eq => enumMap[eq])
+    }));
+
+    await ExerciseModel.insertMany(exercisesWithIds);
+    console.log("✅ Exercises seeded successfully");
 }

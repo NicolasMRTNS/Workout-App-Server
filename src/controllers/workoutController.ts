@@ -16,7 +16,7 @@ export async function fetchWorkouts(req: Request, res: Response) {
 
 export async function create(req: Request, res: Response) {
     try {
-        const { name, exercises, userId, workoutType } = req.body.body;
+        const { name, exercises, userId, workoutType } = req.body;
 
         if (!name || !Array.isArray(exercises) || !workoutType) {
             console.log("Invalid request body: ", req.body);
