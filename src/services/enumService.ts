@@ -1,4 +1,4 @@
-import { EnumModel, EnumValue } from "../models/Enum";
+import { EnumModel, EnumValue } from "../models/EnumValue";
 import { FilterQuery } from "mongoose";
 
 /**

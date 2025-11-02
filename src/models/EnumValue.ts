@@ -14,4 +14,4 @@ const EnumSchema = new Schema<EnumValue>({
     illustration: { type: String, required: false },
 });
 
-export const EnumModel = model<EnumValue>("Enum", EnumSchema);
+export const EnumModel = model<EnumValue>("EnumValue", EnumSchema);

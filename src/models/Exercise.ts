@@ -1,4 +1,4 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model } from "mongoose";
 
 export interface Exercise {
     uniqueName: string;
@@ -12,8 +12,8 @@ const ExerciseSchema = new Schema<Exercise>({
     uniqueName: { type: String, required: true, unique: true, index: true },
     displayName: { type: String, required: true },
     illustration: { type: String, required: false },
-    muscles: [{ type: String, ref: "EnumValue", index: true }],
-    equipments: [{ type: String, ref: "EnumValue", index: true }],
+    muscles: [{ type: String, index: true }],
+    equipments: [{ type: String, index: true }],
 });
 
 export const ExerciseModel = model<Exercise>("Exercise", ExerciseSchema);

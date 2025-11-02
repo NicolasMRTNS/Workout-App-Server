@@ -1,34 +1,59 @@
-import { Exercise, ExerciseModel } from "../models/Exercise";
-import { getEnumsByUniqueNames } from "./enumService";
-import { FilterQuery } from "mongoose";
+import {Exercise, ExerciseModel} from "../models/Exercise";
+import {getEnumsByUniqueNames} from "./enumService";
+import {FilterQuery} from "mongoose";
 
 /**
  * Fetch all exercises, filtered by muscle and/or equipment and/or name.
- * muscle and equipment can be strings or string arrays, name is a string.
+ */
+/**
+ * Fetch all exercises with optional filters
+ * Each exercise will have:
+ * muscles: { uniqueName, displayName }[]
+ * equipments: { uniqueName, displayName }[]
  */
 export async function getAllExercises(
     muscles?: string[] | string,
     equipments?: string[] | string,
     name?: string
-): Promise<Exercise[]> {
+): Promise<
+    (Omit<Exercise, "muscles" | "equipments"> & {
+        muscles: { uniqueName: string; displayName: string }[];
+        equipments: { uniqueName: string; displayName: string }[];
+    })[]
+> {
     const filter: FilterQuery<Exercise> = {};
 
     const muscleArray = Array.isArray(muscles) ? muscles : muscles ? [muscles] : [];
     const equipmentArray = Array.isArray(equipments) ? equipments : equipments ? [equipments] : [];
 
-    if (muscleArray.length > 0) {
-        filter.muscles = { $in: muscleArray };
-    }
+    if (muscleArray.length > 0) filter.muscles = { $all: muscleArray };
+    if (equipmentArray.length > 0) filter.equipments = { $all: equipmentArray };
+    if (name) filter.displayName = { $regex: new RegExp(name, "i") };
 
-    if (equipmentArray.length > 0) {
-        filter.equipments = { $in: equipmentArray };
-    }
+    // Fetch exercises
+    const exercises = await ExerciseModel.find(filter).lean();
 
-    if (name) {
-        filter.displayName = { $regex: new RegExp(name, "i") };
-    }
+    // Collect all uniqueNames to fetch displayNames
+    const allEnumNames = Array.from(
+        new Set(exercises.flatMap((e) => [...e.muscles, ...e.equipments]))
+    );
 
-    return ExerciseModel.find(filter).lean();
+    const enums = await getEnumsByUniqueNames(allEnumNames);
+    const enumMap = Object.fromEntries(enums.map((e) => [e.uniqueName, e.displayName]));
+
+    // Replace strings with objects in the Exercise object itself
+    return exercises.map((e) => ({
+        ...e,
+        muscles: e.muscles.map((m) => ({uniqueName: m, displayName: enumMap[m] || m})),
+        equipments: e.equipments.map((eq) => ({uniqueName: eq, displayName: enumMap[eq] || eq})),
+    }));
+}
+
+/**
+ * Fetch multiple exercises by their unique names.
+ */
+export async function getExercisesByUniqueName(uniqueNames: string[]): Promise<Exercise[] | null> {
+    return ExerciseModel.find({ uniqueName: { $in: uniqueNames } }).lean();
 }
 
 /**

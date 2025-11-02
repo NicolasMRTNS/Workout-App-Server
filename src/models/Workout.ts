@@ -9,9 +9,9 @@ export interface Workout {
 
 const WorkoutSchema = new Schema<Workout>({
     name: { type: String, required: true },
-    exercises: [{ type: String, ref: "Exercise", index: true }],
+    exercises: [{ type: String, index: true }],
     userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
-    workoutType: { type: String, ref: "EnumValue", index: true },
+    workoutType: { type: String, index: true },
 });
 
 export const WorkoutModel = model<Workout>("Workout", WorkoutSchema);

@@ -1,4 +1,4 @@
-import { EnumModel, EnumValue } from "../models/Enum";
+import { EnumModel, EnumValue } from "../models/EnumValue";
 
 const defaultEnums: EnumValue[] = [
     { type: "muscle", uniqueName: "trapezius", displayName: "Trapezius" },
