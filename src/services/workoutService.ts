@@ -74,3 +74,30 @@ export async function createWorkout(workoutData: {
         { path: "workoutType" },
     ]);
 }
+
+export async function deleteWorkout(id: string) {
+    return WorkoutModel.deleteOne({ _id: id });
+}
+
+export async function updateWorkout(id: string, workoutData: {
+    name: string;
+    exercises: string[];
+    workoutType: string;
+    userId?: string;
+}) {
+    const exercises = await getExercisesByUniqueNames(workoutData.exercises);
+
+    const workoutTypeDoc = await getEnumByUniqueName(workoutData.workoutType);
+
+    if (!workoutTypeDoc) {
+        throw new Error("Invalid workout type");
+    }
+
+    const update = {
+        name: workoutData.name,
+        exercises: exercises?.map((e) => e._id),
+        workoutType: workoutTypeDoc._id,
+    };
+
+    return WorkoutModel.updateOne({_id: id}, update);
+}
