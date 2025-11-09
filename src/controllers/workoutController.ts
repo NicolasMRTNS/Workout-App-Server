@@ -4,8 +4,8 @@ import { ResponseData } from "../models/ResponseData";
 
 export async function fetchWorkouts(req: Request, res: Response) {
     try {
-        const { name, workoutType, exercise } = req.query as { name?: string, workoutType?: string, exercise?: string | string[] };
-        const workouts = await getAllWorkouts(name, workoutType, exercise);
+        const { name, workoutType, exercise, date } = req.query as { name?: string, workoutType?: string, exercise?: string | string[], date?: Date };
+        const workouts = await getAllWorkouts(name, workoutType, exercise, date);
 
         res.status(200).json(ResponseData.success(workouts));
     } catch (error) {
@@ -16,14 +16,14 @@ export async function fetchWorkouts(req: Request, res: Response) {
 
 export async function create(req: Request, res: Response) {
     try {
-        const { name, exercises, userId, workoutType } = req.body;
+        const { name, exercises, userId, workoutType, date } = req.body;
 
         if (!name || !Array.isArray(exercises) || !workoutType) {
             console.log("Invalid request body: ", req.body);
             return res.status(400).json(ResponseData.error("Invalid request body"));
         }
 
-        const workout = await createWorkout({ name, exercises, userId, workoutType });
+        const workout = await createWorkout({ name, exercises, userId, workoutType, date });
         res.status(201).json(ResponseData.success([workout], "Workout created successfully"));
     } catch (error) {
         console.log("Error when creating workout: ", error);
@@ -48,7 +48,7 @@ export async function deleteWkt(req: Request, res: Response) {
 export async function update(req: Request, res: Response) {
     try {
         const { id } = req.params;
-        const { name, exercises, userId, workoutType } = req.body;
+        const { name, exercises, userId, workoutType, date } = req.body;
         if (!id) {
             return res.status(400).json(ResponseData.error("Workout ID is required"));
         }
@@ -56,7 +56,7 @@ export async function update(req: Request, res: Response) {
             return res.status(400).json(ResponseData.error("Invalid request body"));
         }
 
-        const workout = await updateWorkout(id, { name, exercises, userId, workoutType });
+        const workout = await updateWorkout(id, { name, exercises, userId, workoutType, date });
         res.status(200).json(ResponseData.success([workout], "Workout updated successfully"));
     } catch (error) {
         console.log("Error when updating workout: ", error);

@@ -7,7 +7,8 @@ import { getExercisesByUniqueNames } from "./exerciceService";
 export async function getAllWorkouts(
     name?: string,
     workoutType?: string,
-    exercise?: string | string[]
+    exercise?: string | string[],
+    date?: Date
 ): Promise<Workout[]> {
     const filter: FilterQuery<Workout> = {};
 
@@ -23,6 +24,8 @@ export async function getAllWorkouts(
         const exerciseDocs = await getExercisesByUniqueNames(exerciseArray);
         if (exerciseDocs && exerciseDocs.length > 0) filter.exercises = { $all: exerciseDocs.map((e) => e._id) };
     }
+
+    if (date) filter.date = date;
 
     return WorkoutModel.find(filter)
         .populate({
@@ -41,8 +44,9 @@ export async function createWorkout(workoutData: {
     exercises: string[]; // uniqueNames
     workoutType: string; // uniqueName
     userId?: string;
+    date?: Date;
 }): Promise<Workout> {
-    const { name, exercises, workoutType, userId } = workoutData;
+    const { name, exercises, workoutType, userId, date } = workoutData;
 
     const exerciseDocs = await getExercisesByUniqueNames(exercises);
     if (exerciseDocs && exerciseDocs.length !== exercises.length) {
@@ -59,6 +63,7 @@ export async function createWorkout(workoutData: {
         exercises: exerciseDocs?.map((e) => e._id) || [],
         workoutType: workoutTypeDoc._id,
         userId,
+        date,
     });
 
     await newWorkout.save();
@@ -84,6 +89,7 @@ export async function updateWorkout(id: string, workoutData: {
     exercises: string[];
     workoutType: string;
     userId?: string;
+    date?: Date;
 }) {
     const exercises = await getExercisesByUniqueNames(workoutData.exercises);
 
@@ -97,6 +103,7 @@ export async function updateWorkout(id: string, workoutData: {
         name: workoutData.name,
         exercises: exercises?.map((e) => e._id),
         workoutType: workoutTypeDoc._id,
+        date: workoutData.date,
     };
 
     return WorkoutModel.updateOne({_id: id}, update);
