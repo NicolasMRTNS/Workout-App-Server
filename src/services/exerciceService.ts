@@ -63,3 +63,7 @@ export async function createExercise(exerciseData: {
         { path: "equipments", select: "uniqueName displayName type illustration" },
     ]);
 }
+
+export async function getExerciseById(id: string): Promise<Exercise | null> {
+    return ExerciseModel.findById(id);
+}

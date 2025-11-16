@@ -108,3 +108,7 @@ export async function updateWorkout(id: string, workoutData: {
 
     return WorkoutModel.updateOne({_id: id}, update);
 }
+
+export async function getWorkoutById(id: string): Promise<Workout | null> {
+    return WorkoutModel.findById(id);
+}

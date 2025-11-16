@@ -1,6 +1,6 @@
 import { EnumModel, EnumValue } from "../models/EnumValue";
 
-const defaultEnums: EnumValue[] = [
+const defaultEnums = [
     { type: "muscle", uniqueName: "trapezius", displayName: "Trapezius" },
     { type: "muscle", uniqueName: "shoulders", displayName: "Shoulders" },
     { type: "muscle", uniqueName: "pectorals", displayName: "Pectorals" },

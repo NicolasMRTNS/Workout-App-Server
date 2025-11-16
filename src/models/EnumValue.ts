@@ -1,7 +1,7 @@
-import { Schema, model } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 
 export interface EnumValue {
-    _id: Schema.Types.ObjectId;
+    _id: Types.ObjectId;
     type: "muscle" | "equipment" | "feeling" | "workoutType";
     uniqueName: string;
     displayName: string;
